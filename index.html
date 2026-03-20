@@ -4,86 +4,201 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#4CAF50">
-    <meta name="description" content="QR Code Scanner for Food Event Check-in">
-    <title>Event Check-in Scanner</title>
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-
-    <!-- Styles -->
+    <meta name="description" content="Register for Community Lunch Event">
+    <title>Event Registration</title>
     <link rel="stylesheet" href="styles.css">
-
-    <!-- QR Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <h1>Event Check-in</h1>
-            <button id="statsBtn" class="icon-btn" aria-label="View Statistics">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                </svg>
-            </button>
+            <h1>Community Lunch Event</h1>
+            <p class="event-date">March 30, 2025 | 12:00 PM</p>
         </header>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Scanner Section -->
-            <section id="scannerSection" class="scanner-section">
-                <div id="reader" class="qr-reader"></div>
-                <p class="scanner-hint">Point camera at QR code to scan</p>
+
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="register">Register</button>
+                <button class="tab-btn" data-tab="lookup">Find My Token</button>
+            </div>
+
+            <!-- Registration Form -->
+            <section id="registerTab" class="tab-content active">
+                <form id="registrationForm" class="registration-form">
+                    <div class="form-group">
+                        <label for="name">Full Name <span class="required">*</span></label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            required
+                            placeholder="Enter your full name"
+                            autocomplete="name"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number (WhatsApp) <span class="required">*</span></label>
+                        <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            required
+                            placeholder="e.g., 9876543210"
+                            autocomplete="tel"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email (Optional - for token backup)</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="your@email.com"
+                            autocomplete="email"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="familyCount">Number of People <span class="required">*</span></label>
+                        <select id="familyCount" name="familyCount" required>
+                            <option value="1">1 person</option>
+                            <option value="2">2 people</option>
+                            <option value="3">3 people</option>
+                            <option value="4">4 people</option>
+                            <option value="5">5 people</option>
+                            <option value="6">6+ people</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-text">Register Now</span>
+                        <span class="btn-loading hidden">Registering...</span>
+                    </button>
+                </form>
             </section>
 
-            <!-- Manual Entry Section -->
-            <section class="manual-entry">
-                <button id="toggleManual" class="toggle-btn">
-                    Enter Token Manually
-                </button>
-                <div id="manualInput" class="manual-input-container hidden">
-                    <input
-                        type="text"
-                        id="tokenInput"
-                        placeholder="Enter token (e.g., EVT-ABC123-4567)"
-                        autocomplete="off"
-                        autocapitalize="characters"
-                    >
-                    <button id="submitToken" class="submit-btn">Check In</button>
-                </div>
+            <!-- Token Lookup -->
+            <section id="lookupTab" class="tab-content">
+                <form id="lookupForm" class="lookup-form">
+                    <p class="lookup-info">Enter your phone number or email to retrieve your token.</p>
+
+                    <div class="form-group">
+                        <label for="lookupPhone">Phone Number</label>
+                        <input
+                            type="tel"
+                            id="lookupPhone"
+                            name="lookupPhone"
+                            placeholder="Enter registered phone"
+                        >
+                    </div>
+
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lookupEmail">Email</label>
+                        <input
+                            type="email"
+                            id="lookupEmail"
+                            name="lookupEmail"
+                            placeholder="Enter registered email"
+                        >
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="lookupBtn">
+                        <span class="btn-text">Find My Token</span>
+                        <span class="btn-loading hidden">Searching...</span>
+                    </button>
+                </form>
             </section>
 
-            <!-- Result Display -->
+            <!-- Success/Result Section -->
             <section id="resultSection" class="result-section hidden">
-                <div id="resultCard" class="result-card">
-                    <div id="resultIcon" class="result-icon"></div>
-                    <h2 id="resultTitle" class="result-title"></h2>
-                    <div id="resultDetails" class="result-details"></div>
-                    <button id="scanAgain" class="scan-again-btn">Scan Next</button>
+                <div class="result-card success">
+                    <div class="result-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <h2 id="resultTitle">Registration Successful!</h2>
+
+                    <div class="token-display">
+                        <p class="token-label">Your Token Number</p>
+                        <h1 id="tokenDisplay" class="token-number">001</h1>
+                        <p class="token-hint">Tell this number at the venue</p>
+                    </div>
+
+                    <div class="event-details">
+                        <div class="detail-row">
+                            <span class="icon">📅</span>
+                            <span id="eventDate">March 30, 2025</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">🕐</span>
+                            <span id="eventTime">12:00 PM</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="icon">📍</span>
+                            <span id="eventVenue">Community Hall</span>
+                        </div>
+                    </div>
+
+                    <div class="save-options">
+                        <button id="saveImageBtn" class="save-btn full-width">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Save Token to Phone
+                        </button>
+                    </div>
+
+                    <p id="emailSent" class="email-notice hidden">
+                        Token also sent to your email
+                    </p>
+
+                    <button id="newRegistrationBtn" class="link-btn">
+                        Register another person
+                    </button>
                 </div>
             </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="error-section hidden">
+                <div class="result-card error">
+                    <div class="result-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h2 id="errorTitle">Error</h2>
+                    <p id="errorMessage">Something went wrong</p>
+                    <button id="tryAgainBtn" class="submit-btn">Try Again</button>
+                </div>
+            </section>
+
         </main>
 
-        <!-- Stats Modal -->
-        <div id="statsModal" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Event Statistics</h2>
-                    <button id="closeStats" class="close-btn">&times;</button>
-                </div>
-                <div id="statsContent" class="stats-content">
-                    <div class="loading">Loading...</div>
-                </div>
-            </div>
-        </div>
+        <!-- Footer -->
+        <footer class="app-footer">
+            <button id="configBtn" class="config-link">Admin Settings</button>
+        </footer>
 
-        <!-- Configuration Modal -->
+        <!-- Config Modal -->
         <div id="configModal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Configuration</h2>
+                    <h2>API Configuration</h2>
                     <button id="closeConfig" class="close-btn">&times;</button>
                 </div>
                 <div class="config-content">
@@ -98,19 +213,10 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="app-footer">
-            <button id="configBtn" class="config-link">Configure API</button>
-        </footer>
     </div>
 
-    <!-- Audio for feedback -->
-    <audio id="successSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAkAH3qo1tFxHQAAKIy7yZ5PBgABJXuxz7mJQgAAFG2oz8qtiGAAAB9kr5rJvJlsAAAlYJN/obzRx5F+AAc1Xy1hkauzxsmtjWIABjlRGUZqhpqtuMXJv7GchXtnYG9wfYaOn6q2vcLBvLWyramlop6gn6KnrLG2u8C/u7avp5yRhXlxbHJ+j5+psbe6uLOsopmPh4SFjJOboKWnp6Wgm5WQjYyNkJSYmp2enJiUkIuIh4iLkJWZnJ2bmpePhn53b2htdoCOnaiwsLCvq6SdlI+MjpOYnaGipKOfmJKMh4SFiY2TmZyfnpuVjoeDfn1/hY2Vnp+em5eRioR/fH2Ai5SbnJ2cmJKMhYB8fH+GjpSYmpuZlY+Jg319fYCIkJeanJuYko2IgoB/gYaLkpaZmZeSjYiEgoCBhYuQlJeXlZKOioaCgYKFipCUlpiWk4+LiIaFhomOkpWXlpSQjYqIhoaIi5CUlZeVk5COioeFhYeLj5OWlpSSkIuIhoWGiIyRlJWVlJGOioeFhYaJjJCTlZWTkIyJh4WFhomNkJKUlJKPjImGhYWHio2QkpSUko+MiIaFhIaJjI+Sk5ORj4yIhoSEhomMj5GSko+NioiGhYWGiYyPkZKRjoyJhoSEhIeLjpCSko+MiYaEhIWGio2PkZGQjYuIhYSEhYiLjpCRkY+MiYaEhIWGiYyPkZCPjYqHhYSEhYiLjo+Qj42KiIWEhISHio2PkJCOjImGhISEhomMjpCQjoyJhoSEhIeKjI6QkI6MiYaEhISGiYyOj5COjImGhISEhomMjo+PjYuIhoSEhIeKjI6Pj42LiIWEhISGiYyOj46Mi4eFhISEh4mMjo6OjIqHhYSEhIeJjI6OjYyKh4WEhIWHiYuNjo2MioeGhISFh4mLjY2Mi4mHhYSEhYeJi42NjIuIhoWEhYWHiYuMjIyLiIaFhIWFh4mLjIyLioiFhYSFhoeJi4yMi4qIhYWEhYaIiouMjIuJh4WFhIWHiIqLjIuKiIaFhIWGh4mLi4uKiYeGhYWFhoeJiouLioiHhYWFhYeJiouLioiHhoWFhYaIiYqLi4mIhoWFhYaHiYqLioqIh4aFhYaHiIqKi4qJh4aFhYaGiIqKioqIh4aFhYaHiImKioqIh4aFhYaHiImKiomIh4aFhYaGiImKioqIh4aGhYaHiImKiomIh4aGhYaGiImKiomIh4aGhYaHiImJiomIh4aGhYaHiIiJiomIh4aGhYaGiIiJiYmIh4aGhYaGiIiJiYmIh4aGhoaGh4iJiYmIh4aGhoaGh4iJiYmIh4aGhoaGh4iIiYmIh4aGhoaGh4iIiYmIh4aGhoaGh4iIiYiIh4aGhoaGh4iIiYiIh4aGhoaHh4iIiIiIh4aGhoaHh4iIiIiIh4aGhoaHh4iIiIiIh4aGhoaHh4iIiIiHh4aGhoaHh4iIiIiHh4aGhoaHh4iIiIiHh4aGhoaHh4iIiIiHh4aGhoaHh4eIiIiHh4aGhoaHh4eIiIiHh4aGhoaHh4eIiIeHh4aGhoaHh4eIiIeHh4aGhoaHh4eIh4eHh4aGhoaHh4eHh4eHh4aGhoaHh4eHh4eHh4aGhoaHh4eHh4eHh4aGhoaHh4eHh4eHh4aGhoaHh4eHh4eHh4aGhoaGh4eHh4eHh4aGhoaGh4eHh4eHh4aGhoaGh4eHh4eHh4aGhoaGh4eHh4eHhoaGhoaGh4eHh4eHhoaGhoaGh4eHh4eHhoaGhoaGhoeHh4eHhoaGhoaGhoeHh4eHhoaGhoaGhoeHh4eHhoaGhoaGhoeHh4eHhoaGhoaGhoeHh4eGhoaGhoaGhoeHh4eGhoaGhoaGhoeHh4eGhoaGhoaGhoeHh4eGhoaGhoaGhoeHh4eGhoaGhoaGhoeHh4aGhoaGhoaGhoeHh4aGhoaGhoaGhoeHh4aGhoaGhoaGhoaHh4aGhoaGhoaGhoaHh4aGhoaGhoaGhoaHhoaGhoaGhoaGhoaHhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhoaGhg==" type="audio/wav">
-    </audio>
-    <audio id="errorSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRl4GAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YToGAACA//9/gH+Af4B/gH+Af4B/gH+Af4B/f4CAgICAgH9/f3+AgICAgIB/f39/gICAgICAf39/f4CAgICAf39/f4CAgICAf39/gICAgIB/f3+AgICAgH9/f4CAgICAf39/gICAgIB/f3+AgICAgH9/f4CAgICAf39/gICAgIB/f4CAgICAgH9/gICAgIB/f3+AgICAgH9/f4CAgICAf39/gICAgIB/f3+AgICAgH9/f4CAgICAf39/gICAgIB/f3+AgICAgH9/f4CAgICAgH9/gICAgIB/f3+AgICAgH9/f4CAgICAgH9/gICAgIB/f3+AgICAf39/f4CAgIB/f39/gICAgH9/f3+AgICAf39/f4CAgIB/f39/gICAgH9/f3+AgICAf39/gICAgICAgH+AgICAgICAf4CAgICAgIB/gICAgICAgH+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==" type="audio/wav">
-    </audio>
+    <!-- Hidden canvas for image generation -->
+    <canvas id="tokenCanvas" style="display: none;"></canvas>
 
     <script src="app.js"></script>
 </body>

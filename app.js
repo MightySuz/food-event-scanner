@@ -1,228 +1,381 @@
 /**
- * Food Event Token Scanner Application
- * Handles QR code scanning and check-in validation
+ * Food Event Registration App
+ * Handles registration, token lookup, and save to image
  */
 
-// Application State
+// ============================================
+// STATE & CONFIGURATION
+// ============================================
+
 const state = {
-    scanner: null,
-    isScanning: false,
     apiUrl: localStorage.getItem('apiUrl') || '',
-    lastScannedToken: null
+    currentToken: null,
+    currentData: null
 };
 
-// DOM Elements
+// ============================================
+// DOM ELEMENTS
+// ============================================
+
 const elements = {
-    reader: document.getElementById('reader'),
-    scannerSection: document.getElementById('scannerSection'),
+    // Tabs
+    tabBtns: document.querySelectorAll('.tab-btn'),
+    registerTab: document.getElementById('registerTab'),
+    lookupTab: document.getElementById('lookupTab'),
+
+    // Registration form
+    registrationForm: document.getElementById('registrationForm'),
+    submitBtn: document.getElementById('submitBtn'),
+    nameInput: document.getElementById('name'),
+    phoneInput: document.getElementById('phone'),
+    emailInput: document.getElementById('email'),
+    familyCountSelect: document.getElementById('familyCount'),
+
+    // Lookup form
+    lookupForm: document.getElementById('lookupForm'),
+    lookupBtn: document.getElementById('lookupBtn'),
+    lookupPhoneInput: document.getElementById('lookupPhone'),
+    lookupEmailInput: document.getElementById('lookupEmail'),
+
+    // Result section
     resultSection: document.getElementById('resultSection'),
-    resultCard: document.getElementById('resultCard'),
-    resultIcon: document.getElementById('resultIcon'),
     resultTitle: document.getElementById('resultTitle'),
-    resultDetails: document.getElementById('resultDetails'),
-    scanAgain: document.getElementById('scanAgain'),
-    toggleManual: document.getElementById('toggleManual'),
-    manualInput: document.getElementById('manualInput'),
-    tokenInput: document.getElementById('tokenInput'),
-    submitToken: document.getElementById('submitToken'),
-    statsBtn: document.getElementById('statsBtn'),
-    statsModal: document.getElementById('statsModal'),
-    closeStats: document.getElementById('closeStats'),
-    statsContent: document.getElementById('statsContent'),
+    tokenDisplay: document.getElementById('tokenDisplay'),
+    eventDate: document.getElementById('eventDate'),
+    eventTime: document.getElementById('eventTime'),
+    eventVenue: document.getElementById('eventVenue'),
+    emailSent: document.getElementById('emailSent'),
+
+    // Save button
+    saveImageBtn: document.getElementById('saveImageBtn'),
+    newRegistrationBtn: document.getElementById('newRegistrationBtn'),
+
+    // Error section
+    errorSection: document.getElementById('errorSection'),
+    errorTitle: document.getElementById('errorTitle'),
+    errorMessage: document.getElementById('errorMessage'),
+    tryAgainBtn: document.getElementById('tryAgainBtn'),
+
+    // Config modal
     configBtn: document.getElementById('configBtn'),
     configModal: document.getElementById('configModal'),
     closeConfig: document.getElementById('closeConfig'),
-    apiUrl: document.getElementById('apiUrl'),
-    saveConfig: document.getElementById('saveConfig'),
-    successSound: document.getElementById('successSound'),
-    errorSound: document.getElementById('errorSound')
+    apiUrlInput: document.getElementById('apiUrl'),
+    saveConfigBtn: document.getElementById('saveConfig'),
+
+    // Canvas for image generation
+    canvas: document.getElementById('tokenCanvas')
 };
 
-/**
- * Initialize the application
- */
+// ============================================
+// INITIALIZATION
+// ============================================
+
 function init() {
-    // Check for saved API URL
+    // Load saved API URL
     if (state.apiUrl) {
-        elements.apiUrl.value = state.apiUrl;
-        initScanner();
-    } else {
-        showConfigModal();
+        elements.apiUrlInput.value = state.apiUrl;
     }
 
-    // Bind event listeners
+    // Bind events
     bindEvents();
+
+    // Show config if not set
+    if (!state.apiUrl) {
+        showConfigModal();
+    }
 }
 
-/**
- * Bind all event listeners
- */
 function bindEvents() {
-    // Manual entry toggle
-    elements.toggleManual.addEventListener('click', toggleManualEntry);
-
-    // Manual token submission
-    elements.submitToken.addEventListener('click', handleManualSubmit);
-    elements.tokenInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleManualSubmit();
+    // Tab navigation
+    elements.tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // Scan again button
-    elements.scanAgain.addEventListener('click', resetScanner);
+    // Registration form
+    elements.registrationForm.addEventListener('submit', handleRegistration);
 
-    // Stats modal
-    elements.statsBtn.addEventListener('click', showStatsModal);
-    elements.closeStats.addEventListener('click', closeStatsModal);
+    // Lookup form
+    elements.lookupForm.addEventListener('submit', handleLookup);
+
+    // Save button
+    elements.saveImageBtn.addEventListener('click', saveAsImage);
+    elements.newRegistrationBtn.addEventListener('click', resetToForm);
+
+    // Error handling
+    elements.tryAgainBtn.addEventListener('click', resetToForm);
 
     // Config modal
     elements.configBtn.addEventListener('click', showConfigModal);
     elements.closeConfig.addEventListener('click', closeConfigModal);
-    elements.saveConfig.addEventListener('click', saveConfig);
-
-    // Close modals on outside click
-    elements.statsModal.addEventListener('click', (e) => {
-        if (e.target === elements.statsModal) closeStatsModal();
-    });
+    elements.saveConfigBtn.addEventListener('click', saveConfig);
     elements.configModal.addEventListener('click', (e) => {
-        if (e.target === elements.configModal) closeConfigModal();
+        if (e.target === elements.configModal && state.apiUrl) {
+            closeConfigModal();
+        }
     });
 }
 
-/**
- * Initialize the QR code scanner
- */
-function initScanner() {
+// ============================================
+// TAB NAVIGATION
+// ============================================
+
+function switchTab(tabName) {
+    // Update tab buttons
+    elements.tabBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+
+    // Update tab content
+    elements.registerTab.classList.toggle('active', tabName === 'register');
+    elements.lookupTab.classList.toggle('active', tabName === 'lookup');
+
+    // Hide result/error sections
+    elements.resultSection.classList.add('hidden');
+    elements.errorSection.classList.add('hidden');
+}
+
+// ============================================
+// REGISTRATION
+// ============================================
+
+async function handleRegistration(e) {
+    e.preventDefault();
+
     if (!state.apiUrl) {
         showConfigModal();
         return;
     }
 
-    state.scanner = new Html5Qrcode('reader');
-
-    const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
+    // Get form data
+    const formData = {
+        name: elements.nameInput.value.trim(),
+        phone: elements.phoneInput.value.trim(),
+        email: elements.emailInput.value.trim(),
+        familyCount: elements.familyCountSelect.value
     };
 
-    state.scanner.start(
-        { facingMode: 'environment' },
-        config,
-        onScanSuccess,
-        onScanFailure
-    ).then(() => {
-        state.isScanning = true;
-    }).catch((err) => {
-        console.error('Failed to start scanner:', err);
-        showError('Camera Error', 'Unable to access camera. Please check permissions and try again.');
-    });
-}
-
-/**
- * Handle successful QR code scan
- */
-async function onScanSuccess(decodedText) {
-    // Prevent duplicate scans
-    if (decodedText === state.lastScannedToken) {
+    // Validate
+    if (!formData.name || !formData.phone) {
+        showError('Validation Error', 'Please fill in all required fields');
         return;
     }
 
-    state.lastScannedToken = decodedText;
-
-    // Pause scanner while processing
-    if (state.scanner && state.isScanning) {
-        await state.scanner.pause();
-    }
-
-    // Process the token
-    await processToken(decodedText);
-}
-
-/**
- * Handle scan failure (called frequently, just log errors)
- */
-function onScanFailure(error) {
-    // Only log actual errors, not "no QR found" messages
-    if (!error.includes('No QR code found')) {
-        console.warn('Scan error:', error);
-    }
-}
-
-/**
- * Process a token (from scan or manual entry)
- */
-async function processToken(token) {
     // Show loading state
-    showResult('loading', 'Processing...', '<div class="loading">Validating token...</div>');
+    setButtonLoading(elements.submitBtn, true);
 
     try {
-        // First validate the token
-        const validateResponse = await callApi('validate', { token });
+        const response = await callApi('register', formData);
 
-        if (!validateResponse.success) {
-            playSound('error');
-            showResult('error', 'Invalid Token', `<p>${validateResponse.error}</p>`);
-            return;
-        }
-
-        const data = validateResponse.data;
-
-        // Check if already checked in
-        if (data.checkedIn) {
-            playSound('error');
-            showResult('warning', 'Already Checked In', `
-                <div class="detail-row">
-                    <span class="label">Name:</span>
-                    <span class="value">${escapeHtml(data.name)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Check-in Time:</span>
-                    <span class="value">${formatTime(data.checkInTime)}</span>
-                </div>
-            `);
-            return;
-        }
-
-        // Perform check-in
-        const checkInResponse = await callApi('checkin', { token });
-
-        if (checkInResponse.success) {
-            playSound('success');
-            showResult('success', 'Check-in Successful!', `
-                <div class="detail-row">
-                    <span class="label">Name:</span>
-                    <span class="value">${escapeHtml(checkInResponse.data.name)}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Family Members:</span>
-                    <span class="value">${checkInResponse.data.familyCount || 1}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Time:</span>
-                    <span class="value">${formatTime(checkInResponse.data.checkInTime)}</span>
-                </div>
-            `);
+        if (response.success) {
+            state.currentToken = response.token;
+            state.currentData = response.data;
+            showSuccess(response.token, response.data, !!formData.email);
         } else {
-            playSound('error');
-            showResult('error', 'Check-in Failed', `<p>${checkInResponse.error}</p>`);
+            // Check if already registered
+            if (response.existingToken) {
+                showError(
+                    'Already Registered',
+                    `This phone number is already registered. Your token is: ${response.existingToken}`
+                );
+            } else {
+                showError('Registration Failed', response.error);
+            }
         }
-
     } catch (error) {
-        console.error('Process error:', error);
-        playSound('error');
-        showResult('error', 'Connection Error', '<p>Unable to connect to server. Please check your internet connection.</p>');
+        console.error('Registration error:', error);
+        showError('Connection Error', 'Unable to connect to server. Please check your internet connection.');
+    } finally {
+        setButtonLoading(elements.submitBtn, false);
     }
 }
 
-/**
- * Call the Google Apps Script API
- */
+// ============================================
+// TOKEN LOOKUP
+// ============================================
+
+async function handleLookup(e) {
+    e.preventDefault();
+
+    if (!state.apiUrl) {
+        showConfigModal();
+        return;
+    }
+
+    const phone = elements.lookupPhoneInput.value.trim();
+    const email = elements.lookupEmailInput.value.trim();
+
+    if (!phone && !email) {
+        showError('Validation Error', 'Please enter your phone number or email');
+        return;
+    }
+
+    // Show loading state
+    setButtonLoading(elements.lookupBtn, true);
+
+    try {
+        const response = await callApi('lookup', { phone, email });
+
+        if (response.success) {
+            state.currentToken = response.data.token;
+            state.currentData = response.data;
+            showSuccess(response.data.token, response.data, false, true);
+        } else {
+            showError('Not Found', response.error);
+        }
+    } catch (error) {
+        console.error('Lookup error:', error);
+        showError('Connection Error', 'Unable to connect to server. Please check your internet connection.');
+    } finally {
+        setButtonLoading(elements.lookupBtn, false);
+    }
+}
+
+// ============================================
+// DISPLAY RESULTS
+// ============================================
+
+function showSuccess(token, data, emailSent = false, isLookup = false) {
+    // Hide form tabs
+    elements.registerTab.classList.remove('active');
+    elements.lookupTab.classList.remove('active');
+    elements.errorSection.classList.add('hidden');
+
+    // Update result content
+    elements.resultTitle.textContent = isLookup ? 'Token Found!' : 'Registration Successful!';
+    elements.tokenDisplay.textContent = token;
+
+    if (data.eventDate) elements.eventDate.textContent = data.eventDate;
+    if (data.eventTime) elements.eventTime.textContent = data.eventTime;
+    if (data.eventVenue) elements.eventVenue.textContent = data.eventVenue;
+
+    // Show/hide email notice
+    elements.emailSent.classList.toggle('hidden', !emailSent);
+
+    // Show result section
+    elements.resultSection.classList.remove('hidden');
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showError(title, message) {
+    elements.errorTitle.textContent = title;
+    elements.errorMessage.textContent = message;
+    elements.errorSection.classList.remove('hidden');
+    elements.resultSection.classList.add('hidden');
+}
+
+function resetToForm() {
+    // Clear forms
+    elements.registrationForm.reset();
+    elements.lookupForm.reset();
+
+    // Hide result/error sections
+    elements.resultSection.classList.add('hidden');
+    elements.errorSection.classList.add('hidden');
+
+    // Show register tab
+    switchTab('register');
+
+    // Clear state
+    state.currentToken = null;
+    state.currentData = null;
+}
+
+// ============================================
+// SAVE AS IMAGE
+// ============================================
+
+function saveAsImage() {
+    const canvas = elements.canvas;
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas size (optimized for phone screens)
+    const width = 400;
+    const height = 450;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Header background
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(0, 0, width, 80);
+
+    // Header text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Event Pass', width / 2, 50);
+
+    // Token label
+    ctx.fillStyle = '#666666';
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillText('Your Token Number', width / 2, 130);
+
+    // Token number (large)
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 72px Arial, sans-serif';
+    ctx.fillText(state.currentToken, width / 2, 200);
+
+    // Divider line
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, 240);
+    ctx.lineTo(width - 40, 240);
+    ctx.stroke();
+
+    // Event details
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#333333';
+    ctx.font = '16px Arial, sans-serif';
+
+    const data = state.currentData || {};
+    let y = 280;
+    const lineHeight = 35;
+
+    if (data.name) {
+        ctx.fillText(`Name: ${data.name}`, 40, y);
+        y += lineHeight;
+    }
+
+    ctx.fillText(`Date: ${data.eventDate || 'March 30, 2025'}`, 40, y);
+    y += lineHeight;
+
+    ctx.fillText(`Time: ${data.eventTime || '12:00 PM'}`, 40, y);
+    y += lineHeight;
+
+    ctx.fillText(`Venue: ${data.eventVenue || 'Community Hall'}`, 40, y);
+
+    // Footer
+    ctx.fillStyle = '#999999';
+    ctx.font = '12px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Tell this number at the venue', width / 2, height - 25);
+
+    // Download the image
+    const link = document.createElement('a');
+    link.download = `token-${state.currentToken}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// ============================================
+// API CALLS
+// ============================================
+
 async function callApi(action, params = {}) {
     const url = new URL(state.apiUrl);
     url.searchParams.append('action', action);
 
     Object.keys(params).forEach(key => {
-        url.searchParams.append(key, params[key]);
+        if (params[key]) {
+            url.searchParams.append(key, params[key]);
+        }
     });
 
     const response = await fetch(url.toString(), {
@@ -237,244 +390,59 @@ async function callApi(action, params = {}) {
     return await response.json();
 }
 
-/**
- * Show result card
- */
-function showResult(type, title, detailsHtml) {
-    elements.scannerSection.classList.add('hidden');
-    elements.resultSection.classList.remove('hidden');
+// ============================================
+// UI HELPERS
+// ============================================
 
-    elements.resultCard.className = `result-card ${type}`;
-    elements.resultIcon.innerHTML = getIconForType(type);
-    elements.resultTitle.textContent = title;
-    elements.resultDetails.innerHTML = detailsHtml;
-}
+function setButtonLoading(button, loading) {
+    const textSpan = button.querySelector('.btn-text');
+    const loadingSpan = button.querySelector('.btn-loading');
 
-/**
- * Get icon SVG for result type
- */
-function getIconForType(type) {
-    const icons = {
-        success: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>`,
-        error: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>`,
-        warning: `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-            <line x1="12" y1="9" x2="12" y2="13"></line>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>`,
-        loading: `<div class="spinner"></div>`
-    };
-    return icons[type] || icons.error;
-}
-
-/**
- * Reset scanner to scan again
- */
-async function resetScanner() {
-    state.lastScannedToken = null;
-
-    elements.resultSection.classList.add('hidden');
-    elements.scannerSection.classList.remove('hidden');
-
-    // Resume scanner
-    if (state.scanner && state.isScanning) {
-        try {
-            await state.scanner.resume();
-        } catch (e) {
-            // If resume fails, restart scanner
-            initScanner();
-        }
-    }
-}
-
-/**
- * Toggle manual entry visibility
- */
-function toggleManualEntry() {
-    elements.manualInput.classList.toggle('hidden');
-    if (!elements.manualInput.classList.contains('hidden')) {
-        elements.tokenInput.focus();
-    }
-}
-
-/**
- * Handle manual token submission
- */
-async function handleManualSubmit() {
-    const token = elements.tokenInput.value.trim().toUpperCase();
-
-    if (!token) {
-        alert('Please enter a token');
-        return;
+    if (textSpan && loadingSpan) {
+        textSpan.classList.toggle('hidden', loading);
+        loadingSpan.classList.toggle('hidden', !loading);
     }
 
-    // Pause scanner if running
-    if (state.scanner && state.isScanning) {
-        await state.scanner.pause();
-    }
-
-    await processToken(token);
-    elements.tokenInput.value = '';
+    button.disabled = loading;
 }
 
-/**
- * Show statistics modal
- */
-async function showStatsModal() {
-    elements.statsModal.classList.remove('hidden');
-    elements.statsContent.innerHTML = '<div class="loading">Loading statistics...</div>';
+// ============================================
+// CONFIGURATION
+// ============================================
 
-    try {
-        const response = await callApi('stats');
-
-        if (response.success) {
-            const stats = response.data;
-            elements.statsContent.innerHTML = `
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-value">${stats.totalRegistrations}</div>
-                        <div class="stat-label">Total Registrations</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${stats.totalFamilyMembers}</div>
-                        <div class="stat-label">Total People</div>
-                    </div>
-                    <div class="stat-item highlight">
-                        <div class="stat-value">${stats.checkedIn}</div>
-                        <div class="stat-label">Checked In</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${stats.checkedInFamilyMembers}</div>
-                        <div class="stat-label">People Checked In</div>
-                    </div>
-                    <div class="stat-item warning">
-                        <div class="stat-value">${stats.noShows}</div>
-                        <div class="stat-label">No Shows</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">${stats.paid}/${stats.totalRegistrations}</div>
-                        <div class="stat-label">Paid</div>
-                    </div>
-                </div>
-            `;
-        } else {
-            elements.statsContent.innerHTML = `<p class="error-message">${response.error}</p>`;
-        }
-    } catch (error) {
-        console.error('Stats error:', error);
-        elements.statsContent.innerHTML = '<p class="error-message">Failed to load statistics</p>';
-    }
-}
-
-/**
- * Close statistics modal
- */
-function closeStatsModal() {
-    elements.statsModal.classList.add('hidden');
-}
-
-/**
- * Show configuration modal
- */
 function showConfigModal() {
     elements.configModal.classList.remove('hidden');
-    elements.apiUrl.focus();
+    elements.apiUrlInput.focus();
 }
 
-/**
- * Close configuration modal
- */
 function closeConfigModal() {
     if (!state.apiUrl) {
-        alert('Please configure the API URL to use the scanner');
+        alert('Please configure the API URL to use the app');
         return;
     }
     elements.configModal.classList.add('hidden');
 }
 
-/**
- * Save configuration
- */
 function saveConfig() {
-    const url = elements.apiUrl.value.trim();
+    const url = elements.apiUrlInput.value.trim();
 
     if (!url) {
-        alert('Please enter a valid URL');
+        alert('Please enter the API URL');
         return;
     }
 
     if (!url.startsWith('https://script.google.com/')) {
-        alert('Please enter a valid Google Apps Script URL');
+        alert('Please enter a valid Google Apps Script Web App URL');
         return;
     }
 
     state.apiUrl = url;
     localStorage.setItem('apiUrl', url);
-
-    closeConfigModal();
     elements.configModal.classList.add('hidden');
-
-    // Initialize scanner if not already running
-    if (!state.isScanning) {
-        initScanner();
-    }
 }
 
-/**
- * Show error message
- */
-function showError(title, message) {
-    showResult('error', title, `<p>${message}</p>`);
-}
+// ============================================
+// INITIALIZE APP
+// ============================================
 
-/**
- * Play feedback sound
- */
-function playSound(type) {
-    const sound = type === 'success' ? elements.successSound : elements.errorSound;
-    if (sound) {
-        sound.currentTime = 0;
-        sound.play().catch(() => {
-            // Ignore audio play errors (common on mobile)
-        });
-    }
-
-    // Also trigger vibration on supported devices
-    if (navigator.vibrate) {
-        navigator.vibrate(type === 'success' ? 200 : [100, 50, 100]);
-    }
-}
-
-/**
- * Format timestamp for display
- */
-function formatTime(timestamp) {
-    if (!timestamp) return 'N/A';
-
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
