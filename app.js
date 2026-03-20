@@ -4,11 +4,12 @@
  */
 
 // ============================================
-// STATE & CONFIGURATION
+// CONFIGURATION - API URL is hardcoded
 // ============================================
 
+const API_URL = 'https://script.google.com/macros/s/AKfycbwTeYOnT07HPNMgILXoXwQpC9_8_I8_u0sE4VNnKUhHjdJoJq_ELhYGpqr3ucUIT06-oA/exec';
+
 const state = {
-    apiUrl: localStorage.getItem('apiUrl') || '',
     currentToken: null,
     currentData: null
 };
@@ -56,13 +57,6 @@ const elements = {
     errorMessage: document.getElementById('errorMessage'),
     tryAgainBtn: document.getElementById('tryAgainBtn'),
 
-    // Config modal
-    configBtn: document.getElementById('configBtn'),
-    configModal: document.getElementById('configModal'),
-    closeConfig: document.getElementById('closeConfig'),
-    apiUrlInput: document.getElementById('apiUrl'),
-    saveConfigBtn: document.getElementById('saveConfig'),
-
     // Canvas for image generation
     canvas: document.getElementById('tokenCanvas')
 };
@@ -72,18 +66,8 @@ const elements = {
 // ============================================
 
 function init() {
-    // Load saved API URL
-    if (state.apiUrl) {
-        elements.apiUrlInput.value = state.apiUrl;
-    }
-
     // Bind events
     bindEvents();
-
-    // Show config if not set
-    if (!state.apiUrl) {
-        showConfigModal();
-    }
 }
 
 function bindEvents() {
@@ -104,16 +88,6 @@ function bindEvents() {
 
     // Error handling
     elements.tryAgainBtn.addEventListener('click', resetToForm);
-
-    // Config modal
-    elements.configBtn.addEventListener('click', showConfigModal);
-    elements.closeConfig.addEventListener('click', closeConfigModal);
-    elements.saveConfigBtn.addEventListener('click', saveConfig);
-    elements.configModal.addEventListener('click', (e) => {
-        if (e.target === elements.configModal && state.apiUrl) {
-            closeConfigModal();
-        }
-    });
 }
 
 // ============================================
@@ -141,11 +115,6 @@ function switchTab(tabName) {
 
 async function handleRegistration(e) {
     e.preventDefault();
-
-    if (!state.apiUrl) {
-        showConfigModal();
-        return;
-    }
 
     // Get form data
     const formData = {
@@ -196,11 +165,6 @@ async function handleRegistration(e) {
 
 async function handleLookup(e) {
     e.preventDefault();
-
-    if (!state.apiUrl) {
-        showConfigModal();
-        return;
-    }
 
     const phone = elements.lookupPhoneInput.value.trim();
     const email = elements.lookupEmailInput.value.trim();
@@ -369,7 +333,7 @@ function saveAsImage() {
 // ============================================
 
 async function callApi(action, params = {}) {
-    const url = new URL(state.apiUrl);
+    const url = new URL(API_URL);
     url.searchParams.append('action', action);
 
     Object.keys(params).forEach(key => {
@@ -404,41 +368,6 @@ function setButtonLoading(button, loading) {
     }
 
     button.disabled = loading;
-}
-
-// ============================================
-// CONFIGURATION
-// ============================================
-
-function showConfigModal() {
-    elements.configModal.classList.remove('hidden');
-    elements.apiUrlInput.focus();
-}
-
-function closeConfigModal() {
-    if (!state.apiUrl) {
-        alert('Please configure the API URL to use the app');
-        return;
-    }
-    elements.configModal.classList.add('hidden');
-}
-
-function saveConfig() {
-    const url = elements.apiUrlInput.value.trim();
-
-    if (!url) {
-        alert('Please enter the API URL');
-        return;
-    }
-
-    if (!url.startsWith('https://script.google.com/')) {
-        alert('Please enter a valid Google Apps Script Web App URL');
-        return;
-    }
-
-    state.apiUrl = url;
-    localStorage.setItem('apiUrl', url);
-    elements.configModal.classList.add('hidden');
 }
 
 // ============================================
