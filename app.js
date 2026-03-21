@@ -31,6 +31,7 @@ const elements = {
     phoneInput: document.getElementById('phone'),
     emailInput: document.getElementById('email'),
     familyCountSelect: document.getElementById('familyCount'),
+    kidsCountSelect: document.getElementById('kidsCount'),
 
     // Lookup form
     lookupForm: document.getElementById('lookupForm'),
@@ -121,7 +122,8 @@ async function handleRegistration(e) {
         name: elements.nameInput.value.trim(),
         phone: elements.phoneInput.value.trim(),
         email: elements.emailInput.value.trim(),
-        familyCount: elements.familyCountSelect.value
+        familyCount: elements.familyCountSelect.value,
+        kidsCount: elements.kidsCountSelect.value
     };
 
     // Validate

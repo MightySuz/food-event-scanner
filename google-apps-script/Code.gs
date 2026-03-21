@@ -32,9 +32,10 @@ const COLS = {
   PHONE: 3,
   EMAIL: 4,
   FAMILY_COUNT: 5,
-  TOKEN: 6,
-  CHECKED_IN: 7,
-  CHECKIN_TIME: 8
+  KIDS_COUNT: 6,
+  TOKEN: 7,
+  CHECKED_IN: 8,
+  CHECKIN_TIME: 9
 };
 
 // ============================================
@@ -60,6 +61,7 @@ function setupSheet() {
     'Phone',
     'Email',
     'Family Count',
+    'Kids Count',
     'Token',
     'Checked In',
     'Check-in Time'
@@ -149,7 +151,7 @@ function handleRequest(e) {
 // ============================================
 
 function registerUser(params) {
-  const { name, phone, email, familyCount } = params;
+  const { name, phone, email, familyCount, kidsCount } = params;
 
   // Validation
   if (!name || !phone) {
@@ -178,6 +180,7 @@ function registerUser(params) {
     phone,
     email || '',
     parseInt(familyCount) || 1,
+    parseInt(kidsCount) || 0,
     token,
     false,
     ''
@@ -190,7 +193,7 @@ function registerUser(params) {
 
   // Notify organizer (optional)
   if (CONFIG.ORGANIZER_EMAIL) {
-    notifyOrganizer(name, phone, familyCount, token);
+    notifyOrganizer(name, phone, familyCount, kidsCount, token);
   }
 
   return {
@@ -202,6 +205,7 @@ function registerUser(params) {
       phone: phone,
       email: email || null,
       familyCount: parseInt(familyCount) || 1,
+      kidsCount: parseInt(kidsCount) || 0,
       eventName: CONFIG.EVENT_NAME,
       eventDate: CONFIG.EVENT_DATE,
       eventTime: CONFIG.EVENT_TIME,
@@ -265,6 +269,7 @@ function lookupToken(params) {
           name: row[COLS.NAME - 1],
           token: row[COLS.TOKEN - 1],
           familyCount: row[COLS.FAMILY_COUNT - 1],
+          kidsCount: row[COLS.KIDS_COUNT - 1],
           eventName: CONFIG.EVENT_NAME,
           eventDate: CONFIG.EVENT_DATE,
           eventTime: CONFIG.EVENT_TIME,
@@ -301,6 +306,7 @@ function verifyToken(token) {
           name: data[i][COLS.NAME - 1],
           phone: data[i][COLS.PHONE - 1],
           familyCount: data[i][COLS.FAMILY_COUNT - 1],
+          kidsCount: data[i][COLS.KIDS_COUNT - 1],
           checkedIn: data[i][COLS.CHECKED_IN - 1],
           checkInTime: data[i][COLS.CHECKIN_TIME - 1]
         }
@@ -349,6 +355,7 @@ function checkInUser(token) {
         data: {
           name: data[i][COLS.NAME - 1],
           familyCount: data[i][COLS.FAMILY_COUNT - 1],
+          kidsCount: data[i][COLS.KIDS_COUNT - 1],
           checkInTime: checkInTime.toISOString()
         }
       };
@@ -368,17 +375,22 @@ function getStats() {
 
   let totalRegistrations = 0;
   let totalPeople = 0;
+  let totalKids = 0;
   let checkedIn = 0;
   let checkedInPeople = 0;
+  let checkedInKids = 0;
 
   for (let i = 1; i < data.length; i++) {
     totalRegistrations++;
     const familyCount = parseInt(data[i][COLS.FAMILY_COUNT - 1]) || 1;
+    const kidsCount = parseInt(data[i][COLS.KIDS_COUNT - 1]) || 0;
     totalPeople += familyCount;
+    totalKids += kidsCount;
 
     if (data[i][COLS.CHECKED_IN - 1] === true) {
       checkedIn++;
       checkedInPeople += familyCount;
+      checkedInKids += kidsCount;
     }
   }
 
@@ -387,8 +399,10 @@ function getStats() {
     data: {
       totalRegistrations,
       totalPeople,
+      totalKids,
       checkedIn,
       checkedInPeople,
+      checkedInKids,
       pending: totalRegistrations - checkedIn
     }
   };
@@ -493,7 +507,7 @@ If you forget your token, you can retrieve it from the registration website usin
   }
 }
 
-function notifyOrganizer(name, phone, familyCount, token) {
+function notifyOrganizer(name, phone, familyCount, kidsCount, token) {
   const subject = `New Registration #${token}: ${name}`;
   const body = `
 New registration received:
@@ -502,6 +516,7 @@ Token: ${token}
 Name: ${name}
 Phone: ${phone}
 Family Count: ${familyCount}
+Kids (below 12): ${kidsCount || 0}
 Time: ${new Date().toLocaleString()}
   `;
 
