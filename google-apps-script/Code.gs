@@ -267,7 +267,7 @@ function lookupToken(params) {
         success: true,
         data: {
           name: row[COLS.NAME - 1],
-          token: row[COLS.TOKEN - 1],
+          token: String(row[COLS.TOKEN - 1]).padStart(3, '0'),
           familyCount: row[COLS.FAMILY_COUNT - 1],
           kidsCount: row[COLS.KIDS_COUNT - 1],
           eventName: CONFIG.EVENT_NAME,

@@ -159,7 +159,7 @@ async function handleRegistration(e) {
         const response = await callApi('register', formData);
 
         if (response.success) {
-            state.currentToken = response.token;
+            state.currentToken = String(response.token).padStart(3, '0');
             state.currentData = response.data;
             showSuccess(response.token, response.data, !!formData.email);
         } else {
@@ -209,7 +209,7 @@ async function handleLookup(e) {
         const response = await callApi('lookup', { phone, email });
 
         if (response.success) {
-            state.currentToken = response.data.token;
+            state.currentToken = String(response.data.token).padStart(3, '0');
             state.currentData = response.data;
             showSuccess(response.data.token, response.data, false, true);
         } else {
@@ -227,6 +227,13 @@ async function handleLookup(e) {
 // DISPLAY RESULTS
 // ============================================
 
+// Default event details (fallback if API doesn't return them)
+const DEFAULT_EVENT = {
+    eventDate: 'Sunday, March 29, 2026',
+    eventTime: '11:30 AM',
+    eventVenue: 'Digambar Jain Jinalay, Nallagandla'
+};
+
 function showSuccess(token, data, emailSent = false, isLookup = false) {
     // Hide form tabs
     elements.registerTab.classList.remove('active');
@@ -235,11 +242,15 @@ function showSuccess(token, data, emailSent = false, isLookup = false) {
 
     // Update result content
     elements.resultTitle.textContent = isLookup ? 'Token Found!' : 'Registration Successful!';
-    elements.tokenDisplay.textContent = token;
 
-    if (data.eventDate) elements.eventDate.textContent = data.eventDate;
-    if (data.eventTime) elements.eventTime.textContent = data.eventTime;
-    if (data.eventVenue) elements.eventVenue.textContent = data.eventVenue;
+    // Ensure token is always 3 digits
+    const formattedToken = String(token).padStart(3, '0');
+    elements.tokenDisplay.textContent = formattedToken;
+
+    // Always set event details (use API data or fallback to defaults)
+    elements.eventDate.textContent = data.eventDate || DEFAULT_EVENT.eventDate;
+    elements.eventTime.textContent = data.eventTime || DEFAULT_EVENT.eventTime;
+    elements.eventVenue.textContent = data.eventVenue || DEFAULT_EVENT.eventVenue;
 
     // Show/hide email notice
     elements.emailSent.classList.toggle('hidden', !emailSent);
@@ -335,13 +346,13 @@ function saveAsImage() {
         y += lineHeight;
     }
 
-    ctx.fillText(`Date: ${data.eventDate || 'March 30, 2025'}`, 40, y);
+    ctx.fillText(`Date: ${data.eventDate || DEFAULT_EVENT.eventDate}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Time: ${data.eventTime || '12:00 PM'}`, 40, y);
+    ctx.fillText(`Time: ${data.eventTime || DEFAULT_EVENT.eventTime}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Venue: ${data.eventVenue || 'Community Hall'}`, 40, y);
+    ctx.fillText(`Venue: ${data.eventVenue || DEFAULT_EVENT.eventVenue}`, 40, y);
 
     // Footer
     ctx.fillStyle = '#999999';
