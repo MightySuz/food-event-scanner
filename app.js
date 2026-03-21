@@ -89,6 +89,20 @@ function bindEvents() {
 
     // Error handling
     elements.tryAgainBtn.addEventListener('click', resetToForm);
+
+    // Phone number validation - only allow digits
+    elements.phoneInput.addEventListener('input', filterPhoneInput);
+    elements.lookupPhoneInput.addEventListener('input', filterPhoneInput);
+}
+
+// Filter phone input to only allow digits
+function filterPhoneInput(e) {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '');
+}
+
+// Validate phone number (must be digits only, 10 digits for Indian numbers)
+function isValidPhone(phone) {
+    return /^[0-9]{10}$/.test(phone);
 }
 
 // ============================================
@@ -129,6 +143,12 @@ async function handleRegistration(e) {
     // Validate
     if (!formData.name || !formData.phone) {
         showError('Validation Error', 'Please fill in all required fields');
+        return;
+    }
+
+    // Validate phone number
+    if (!isValidPhone(formData.phone)) {
+        showError('Validation Error', 'Please enter a valid 10-digit phone number');
         return;
     }
 
@@ -173,6 +193,12 @@ async function handleLookup(e) {
 
     if (!phone && !email) {
         showError('Validation Error', 'Please enter your phone number or email');
+        return;
+    }
+
+    // Validate phone number if provided
+    if (phone && !isValidPhone(phone)) {
+        showError('Validation Error', 'Please enter a valid 10-digit phone number');
         return;
     }
 
@@ -309,13 +335,13 @@ function saveAsImage() {
         y += lineHeight;
     }
 
-    ctx.fillText(`Date: ${data.eventDate || 'Sunday, March 29, 2026'}`, 40, y);
+    ctx.fillText(`Date: ${data.eventDate || 'March 30, 2025'}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Time: ${data.eventTime || '11:30 AM'}`, 40, y);
+    ctx.fillText(`Time: ${data.eventTime || '12:00 PM'}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Venue: ${data.eventVenue || 'Digambar Jain Jinalay'}`, 40, y);
+    ctx.fillText(`Venue: ${data.eventVenue || 'Community Hall'}`, 40, y);
 
     // Footer
     ctx.fillStyle = '#999999';
