@@ -309,13 +309,13 @@ function saveAsImage() {
         y += lineHeight;
     }
 
-    ctx.fillText(`Date: ${data.eventDate || 'March 30, 2025'}`, 40, y);
+    ctx.fillText(`Date: ${data.eventDate || 'Sunday, March 29, 2026'}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Time: ${data.eventTime || '12:00 PM'}`, 40, y);
+    ctx.fillText(`Time: ${data.eventTime || '11:30 AM'}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Venue: ${data.eventVenue || 'Community Hall'}`, 40, y);
+    ctx.fillText(`Venue: ${data.eventVenue || 'Digambar Jain Jinalay'}`, 40, y);
 
     // Footer
     ctx.fillStyle = '#999999';
