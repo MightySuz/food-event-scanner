@@ -7,7 +7,8 @@
 // CONFIGURATION - API URL is hardcoded
 // ============================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwTeYOnT07HPNMgILXoXwQpC9_8_I8_u0sE4VNnKUhHjdJoJq_ELhYGpqr3ucUIT06-oA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxa7GrKSqgl0TMM6Lr0Ty8GRUQcfZyyNiHo6FySVv0IXgEyMYxT6657rSnn4MaAIrekRw/exec';
+
 
 const state = {
     currentToken: null,
