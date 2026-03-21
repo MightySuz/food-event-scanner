@@ -18,10 +18,10 @@
 // ============================================
 const CONFIG = {
   SHEET_NAME: 'Registrations',
-  EVENT_NAME: 'Community Lunch Event',
-  EVENT_DATE: 'March 30, 2025',
-  EVENT_TIME: '12:00 PM',
-  EVENT_VENUE: 'Community Hall, 123 Main Street',
+  EVENT_NAME: 'श्री महावीर जन्म कल्याणक महोत्सव - वात्सल्य भोज',
+  EVENT_DATE: 'Sunday, March 29, 2026',
+  EVENT_TIME: '11:30 AM',
+  EVENT_VENUE: 'Digambar Jain Jinalay, Nallagandla',
   ORGANIZER_EMAIL: '', // Optional: Add your email to get notifications
 };
 
