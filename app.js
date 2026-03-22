@@ -4,11 +4,10 @@
  */
 
 // ============================================
-// CONFIGURATION - API URL is hardcoded
+// CONFIGURATION - Loaded from config.json
 // ============================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwqjLf8olWCvD4Dz1wSf9dO4Bq1bqq5MKWiw5elWchrxTeRRUKg_1H0xD7jIcEbMFWf2A/exec';
-
+let API_URL = null;
 
 const state = {
     currentToken: null,
@@ -67,7 +66,19 @@ const elements = {
 // INITIALIZATION
 // ============================================
 
-function init() {
+async function init() {
+    // Load API URL from config file
+    try {
+        const response = await fetch('config.json');
+        if (!response.ok) throw new Error('Failed to load config');
+        const config = await response.json();
+        API_URL = config.apiUrl;
+    } catch (error) {
+        console.error('Configuration error:', error);
+        showError('Configuration Error', 'Unable to load application configuration. Please refresh the page.');
+        return;
+    }
+
     // Bind events
     bindEvents();
 }
