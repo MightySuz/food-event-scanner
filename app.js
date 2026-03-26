@@ -7,7 +7,7 @@
 // CONFIGURATION - API URL is hardcoded
 // ============================================
 
-const API_URL = 'https://script.google.com/macros/library/d/1c5yQS0hRuD2d3c3bfz7gbfe7wopGISqwUBoOBL74wIH0HLTkes77xTND/12';
+const API_URL = 'add the url here';
 
 
 const state = {
