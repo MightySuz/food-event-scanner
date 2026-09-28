@@ -14,9 +14,9 @@
 const CONFIG = {
   SHEET_NAME: 'Registrations',
   EVENT_NAME: 'श्री महावीर जन्म कल्याणक महोत्सव - वात्सल्य भोज',
-  EVENT_DATE: 'Sunday, March 29, 2026',
-  EVENT_TIME: '11:30 AM',
-  EVENT_VENUE: 'DSR Park Ridge ClubHouse, F8C3+VJ2, HUDA Layout, Nallagandla, Hyderabad',
+  EVENT_DATE: 'Sunday, October 04, 2026',
+  EVENT_TIME: '12:00 PM',
+  EVENT_VENUE: 'Aparna Sarovar Zenith ClubHouse, Behind Aparna Neo Mall, Nallagandla, Hyderabad',
   ORGANIZER_EMAIL: '', // Optional: Add your email to get notifications
 };
 

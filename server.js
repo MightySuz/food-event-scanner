@@ -14,9 +14,9 @@ const DATA_FILE = path.join(DATA_DIR, 'registrations.json');
 
 const EVENT_CONFIG = {
   eventName: 'श्री महावीर जन्म कल्याणक महोत्सव - वात्सल्य भोज',
-  eventDate: 'Sunday, March 29, 2026',
-  eventTime: '11:30 AM',
-  eventVenue: 'DSR Park Ridge ClubHouse, F8C3+VJ2, HUDA Layout, Nallagandla, Hyderabad'
+  eventDate: 'Sunday, October 04, 2026',
+  eventTime: '12:00 PM',
+  eventVenue: 'Aparna Sarovar Zenith ClubHouse, Behind Aparna Neo Mall, Nallagandla, Hyderabad'
 };
 
 // Ensure data directory and file exist
