@@ -70,7 +70,7 @@ const elements = {
 async function init() {
     // 1. Try loading config from config.json
     try {
-        const response = await fetch('config.json');
+        const response = await fetch('config.json?t=' + Date.now());
         if (response.ok) {
             const config = await response.json();
             const urlVal = (config.apiUrl || '').trim();
