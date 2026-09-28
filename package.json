@@ -1,0 +1,10 @@
+{
+  "name": "food-event-scanner",
+  "version": "1.0.0",
+  "description": "Community Food Event Participant Registration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  }
+}

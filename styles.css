@@ -318,6 +318,39 @@ html, body {
     font-size: 0.85rem;
 }
 
+/* Registration Summary Box */
+.registration-summary-box {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.summary-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.summary-field:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
 /* Event Details */
 .event-details {
     background: var(--bg);

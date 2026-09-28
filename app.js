@@ -1,17 +1,22 @@
 /**
  * Food Event Registration App
- * Handles registration, token lookup, and save to image
+ * Handles registration, record display, and save confirmation pass
  */
 
 // ============================================
-// CONFIGURATION - Loaded from config.json or fallback
+// CONFIGURATION
 // ============================================
 
 let API_URL = '';
 
+const DEFAULT_EVENT = {
+    eventName: 'श्री महावीर जन्म कल्याणक महोत्सव - वात्सल्य भोज',
+    eventDate: 'Sunday, March 29, 2026',
+    eventTime: '11:30 AM',
+    eventVenue: 'DSR Park Ridge ClubHouse, F8C3+VJ2, HUDA Layout, Nallagandla, Hyderabad'
+};
 
 const state = {
-    currentToken: null,
     currentData: null
 };
 
@@ -20,12 +25,8 @@ const state = {
 // ============================================
 
 const elements = {
-    // Tabs
-    tabBtns: document.querySelectorAll('.tab-btn'),
-    registerTab: document.getElementById('registerTab'),
-    lookupTab: document.getElementById('lookupTab'),
-
     // Registration form
+    registerTab: document.getElementById('registerTab'),
     registrationForm: document.getElementById('registrationForm'),
     submitBtn: document.getElementById('submitBtn'),
     nameInput: document.getElementById('name'),
@@ -34,16 +35,12 @@ const elements = {
     familyCountSelect: document.getElementById('familyCount'),
     kidsCountSelect: document.getElementById('kidsCount'),
 
-    // Lookup form
-    lookupForm: document.getElementById('lookupForm'),
-    lookupBtn: document.getElementById('lookupBtn'),
-    lookupPhoneInput: document.getElementById('lookupPhone'),
-    lookupEmailInput: document.getElementById('lookupEmail'),
-
     // Result section
     resultSection: document.getElementById('resultSection'),
     resultTitle: document.getElementById('resultTitle'),
-    tokenDisplay: document.getElementById('tokenDisplay'),
+    summaryName: document.getElementById('summaryName'),
+    summaryPhone: document.getElementById('summaryPhone'),
+    summaryHeadcount: document.getElementById('summaryHeadcount'),
     eventDate: document.getElementById('eventDate'),
     eventTime: document.getElementById('eventTime'),
     eventVenue: document.getElementById('eventVenue'),
@@ -68,7 +65,7 @@ const elements = {
 // ============================================
 
 async function init() {
-    // 1. Try loading config from config.json
+    // 1. Try loading config from config.json (with cache buster)
     try {
         const response = await fetch('config.json?t=' + Date.now());
         if (response.ok) {
@@ -92,16 +89,8 @@ async function init() {
 }
 
 function bindEvents() {
-    // Tab navigation
-    elements.tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-    });
-
     // Registration form
     elements.registrationForm.addEventListener('submit', handleRegistration);
-
-    // Lookup form
-    elements.lookupForm.addEventListener('submit', handleLookup);
 
     // Save button
     elements.saveImageBtn.addEventListener('click', saveAsImage);
@@ -112,7 +101,6 @@ function bindEvents() {
 
     // Phone number validation - only allow digits
     elements.phoneInput.addEventListener('input', filterPhoneInput);
-    elements.lookupPhoneInput.addEventListener('input', filterPhoneInput);
 }
 
 // Filter phone input to only allow digits
@@ -120,28 +108,9 @@ function filterPhoneInput(e) {
     e.target.value = e.target.value.replace(/[^0-9]/g, '');
 }
 
-// Validate phone number (must be digits only, 10 digits for Indian numbers)
+// Validate phone number (must be digits only, 10 digits)
 function isValidPhone(phone) {
     return /^[0-9]{10}$/.test(phone);
-}
-
-// ============================================
-// TAB NAVIGATION
-// ============================================
-
-function switchTab(tabName) {
-    // Update tab buttons
-    elements.tabBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabName);
-    });
-
-    // Update tab content
-    elements.registerTab.classList.toggle('active', tabName === 'register');
-    elements.lookupTab.classList.toggle('active', tabName === 'lookup');
-
-    // Hide result/error sections
-    elements.resultSection.classList.add('hidden');
-    elements.errorSection.classList.add('hidden');
 }
 
 // ============================================
@@ -179,18 +148,17 @@ async function handleRegistration(e) {
         const response = await callApi('register', formData);
 
         if (response.success) {
-            state.currentToken = String(response.token).padStart(3, '0');
-            state.currentData = response.data;
-            showSuccess(response.token, response.data, !!formData.email);
+            state.currentData = response.data || formData;
+            showSuccess(state.currentData, !!formData.email);
         } else {
             // Check if already registered
-            if (response.existingToken) {
+            if (response.existingToken || response.isDuplicate || (response.error && response.error.includes('already registered'))) {
                 showError(
                     'Already Registered',
-                    `This phone number is already registered. Your token is: ${response.existingToken}`
+                    'This phone number is already registered for the event.'
                 );
             } else {
-                showError('Registration Failed', response.error);
+                showError('Registration Failed', response.error || 'Unable to register. Please try again.');
             }
         }
     } catch (error) {
@@ -202,72 +170,23 @@ async function handleRegistration(e) {
 }
 
 // ============================================
-// TOKEN LOOKUP
-// ============================================
-
-async function handleLookup(e) {
-    e.preventDefault();
-
-    const phone = elements.lookupPhoneInput.value.trim();
-    const email = elements.lookupEmailInput.value.trim();
-
-    if (!phone && !email) {
-        showError('Validation Error', 'Please enter your phone number or email');
-        return;
-    }
-
-    // Validate phone number if provided
-    if (phone && !isValidPhone(phone)) {
-        showError('Validation Error', 'Please enter a valid 10-digit phone number');
-        return;
-    }
-
-    // Show loading state
-    setButtonLoading(elements.lookupBtn, true);
-
-    try {
-        const response = await callApi('lookup', { phone, email });
-
-        if (response.success) {
-            state.currentToken = String(response.data.token).padStart(3, '0');
-            state.currentData = response.data;
-            showSuccess(response.data.token, response.data, false, true);
-        } else {
-            showError('Not Found', response.error);
-        }
-    } catch (error) {
-        console.error('Lookup error:', error);
-        showError('Connection Error', error.message || 'Unable to connect to server. Please check your internet connection.');
-    } finally {
-        setButtonLoading(elements.lookupBtn, false);
-    }
-}
-
-// ============================================
 // DISPLAY RESULTS
 // ============================================
 
-// Default event details (fallback if API doesn't return them)
-const DEFAULT_EVENT = {
-    eventDate: 'Sunday, March 29, 2026',
-    eventTime: '11:30 AM',
-    eventVenue: 'Digambar Jain Jinalay, Nallagandla'
-};
-
-function showSuccess(token, data, emailSent = false, isLookup = false) {
-    // Hide form tabs
-    elements.registerTab.classList.remove('active');
-    elements.lookupTab.classList.remove('active');
+function showSuccess(data, emailSent = false) {
+    // Hide form
+    elements.registerTab.classList.add('hidden');
     elements.errorSection.classList.add('hidden');
 
-    // Update result content
-    elements.resultTitle.textContent = isLookup ? 'Token Found!' : 'Registration Successful!';
+    // Update result summary
+    elements.summaryName.textContent = data.name || '-';
+    elements.summaryPhone.textContent = data.phone || '-';
 
-    // Ensure token is always 3 digits
-    const formattedToken = String(token).padStart(3, '0');
-    elements.tokenDisplay.textContent = formattedToken;
+    const fCount = data.familyCount || 1;
+    const kCount = parseInt(data.kidsCount) || 0;
+    elements.summaryHeadcount.textContent = `${fCount} Person(s) ${kCount > 0 ? `(${kCount} Kids)` : ''}`;
 
-    // Always set event details (use API data or fallback to defaults)
+    // Event details
     elements.eventDate.textContent = data.eventDate || DEFAULT_EVENT.eventDate;
     elements.eventTime.textContent = data.eventTime || DEFAULT_EVENT.eventTime;
     elements.eventVenue.textContent = data.eventVenue || DEFAULT_EVENT.eventVenue;
@@ -292,31 +211,29 @@ function showError(title, message) {
 function resetToForm() {
     // Clear forms
     elements.registrationForm.reset();
-    elements.lookupForm.reset();
 
     // Hide result/error sections
     elements.resultSection.classList.add('hidden');
     elements.errorSection.classList.add('hidden');
 
-    // Show register tab
-    switchTab('register');
+    // Show form
+    elements.registerTab.classList.remove('hidden');
 
     // Clear state
-    state.currentToken = null;
     state.currentData = null;
 }
 
 // ============================================
-// SAVE AS IMAGE
+// SAVE AS IMAGE (CONFIRMATION CARD)
 // ============================================
 
 function saveAsImage() {
     const canvas = elements.canvas;
     const ctx = canvas.getContext('2d');
 
-    // Set canvas size (optimized for phone screens)
-    const width = 400;
-    const height = 450;
+    // Canvas size
+    const width = 420;
+    const height = 480;
     canvas.width = width;
     canvas.height = height;
 
@@ -324,67 +241,108 @@ function saveAsImage() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, width, height);
 
-    // Header background
-    ctx.fillStyle = '#4CAF50';
-    ctx.fillRect(0, 0, width, 80);
+    // Header gradient
+    const gradient = ctx.createLinearGradient(0, 0, width, 85);
+    gradient.addColorStop(0, '#2e7d32');
+    gradient.addColorStop(1, '#4caf50');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, 85);
 
     // Header text
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px Arial, sans-serif';
+    ctx.font = 'bold 18px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Event Pass', width / 2, 50);
+    ctx.fillText('श्री महावीर जन्म कल्याणक महोत्सव', width / 2, 38);
 
-    // Token label
-    ctx.fillStyle = '#666666';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText('Your Token Number', width / 2, 130);
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillText('वात्सल्य भोज - नामांकन पुष्टि', width / 2, 65);
 
-    // Token number (large)
-    ctx.fillStyle = '#333333';
-    ctx.font = 'bold 72px Arial, sans-serif';
-    ctx.fillText(state.currentToken, width / 2, 200);
+    // Confirmation Badge
+    ctx.fillStyle = '#e8f5e9';
+    ctx.beginPath();
+    ctx.roundRect(40, 105, width - 80, 50, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#2e7d32';
+    ctx.font = 'bold 16px Arial, sans-serif';
+    ctx.fillText('✓ REGISTRATION CONFIRMED', width / 2, 136);
+
+    // Participant details
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#212121';
+    ctx.font = '15px Arial, sans-serif';
+
+    const data = state.currentData || {};
+    let y = 190;
+    const lineHeight = 32;
+
+    if (data.name) {
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillText(`Name: ${data.name}`, 40, y);
+        y += lineHeight;
+        ctx.font = '15px Arial, sans-serif';
+    }
+
+    if (data.phone) {
+        ctx.fillText(`Phone: ${data.phone}`, 40, y);
+        y += lineHeight;
+    }
+
+    const fCount = data.familyCount || 1;
+    const kCount = parseInt(data.kidsCount) || 0;
+    ctx.fillText(`Total Headcount: ${fCount} Person(s) ${kCount > 0 ? `(${kCount} Kids)` : ''}`, 40, y);
+    y += lineHeight;
 
     // Divider line
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(40, 240);
-    ctx.lineTo(width - 40, 240);
+    ctx.moveTo(40, y);
+    ctx.lineTo(width - 40, y);
     ctx.stroke();
+    y += 24;
 
     // Event details
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#333333';
-    ctx.font = '16px Arial, sans-serif';
-
-    const data = state.currentData || {};
-    let y = 280;
-    const lineHeight = 35;
-
-    if (data.name) {
-        ctx.fillText(`Name: ${data.name}`, 40, y);
-        y += lineHeight;
-    }
-
     ctx.fillText(`Date: ${data.eventDate || DEFAULT_EVENT.eventDate}`, 40, y);
     y += lineHeight;
 
     ctx.fillText(`Time: ${data.eventTime || DEFAULT_EVENT.eventTime}`, 40, y);
     y += lineHeight;
 
-    ctx.fillText(`Venue: ${data.eventVenue || DEFAULT_EVENT.eventVenue}`, 40, y);
+    // Venue wrap
+    const venueText = `Venue: ${data.eventVenue || DEFAULT_EVENT.eventVenue}`;
+    wrapText(ctx, venueText, 40, y, width - 80, 20);
 
-    // Footer
-    ctx.fillStyle = '#999999';
-    ctx.font = '12px Arial, sans-serif';
+    // Footer bar
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, height - 40, width, 40);
+    ctx.fillStyle = '#666666';
+    ctx.font = '13px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Tell this number at the venue', width / 2, height - 25);
+    ctx.fillText('दिगंबर जैन जिनालय, नल्लागंडला', width / 2, height - 16);
 
     // Download the image
     const link = document.createElement('a');
-    link.download = `token-${state.currentToken}.png`;
+    link.download = `Vatsalya-Bhoj-Pass.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+            ctx.fillText(line, x, y);
+            line = words[n] + ' ';
+            y += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, x, y);
 }
 
 // ============================================

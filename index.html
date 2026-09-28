@@ -22,12 +22,6 @@
         <!-- Main Content -->
         <main class="main-content">
 
-            <!-- Tab Navigation -->
-            <div class="tab-nav">
-                <button class="tab-btn active" data-tab="register">Register</button>
-                <button class="tab-btn" data-tab="lookup">Find My Token</button>
-            </div>
-
             <!-- Registration Form -->
             <section id="registerTab" class="tab-content active">
                 <form id="registrationForm" class="registration-form">
@@ -56,7 +50,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email (Optional - for token backup)</label>
+                        <label for="email">Email (Optional - for confirmation)</label>
                         <input
                             type="email"
                             id="email"
@@ -97,42 +91,6 @@
                 </form>
             </section>
 
-            <!-- Token Lookup -->
-            <section id="lookupTab" class="tab-content">
-                <form id="lookupForm" class="lookup-form">
-                    <p class="lookup-info">Enter your phone number or email to retrieve your token.</p>
-
-                    <div class="form-group">
-                        <label for="lookupPhone">Phone Number</label>
-                        <input
-                            type="tel"
-                            id="lookupPhone"
-                            name="lookupPhone"
-                            placeholder="Enter registered phone"
-                        >
-                    </div>
-
-                    <div class="or-divider">
-                        <span>OR</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="lookupEmail">Email</label>
-                        <input
-                            type="email"
-                            id="lookupEmail"
-                            name="lookupEmail"
-                            placeholder="Enter registered email"
-                        >
-                    </div>
-
-                    <button type="submit" class="submit-btn" id="lookupBtn">
-                        <span class="btn-text">Find My Token</span>
-                        <span class="btn-loading hidden">Searching...</span>
-                    </button>
-                </form>
-            </section>
-
             <!-- Success/Result Section -->
             <section id="resultSection" class="result-section hidden">
                 <div class="result-card success">
@@ -142,12 +100,24 @@
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
                     </div>
-                    <h2 id="resultTitle">Registration Successful!</h2>
+                    <h2 id="resultTitle">Registration Confirmed!</h2>
+                    <p style="color: var(--text-secondary); margin-top: -12px; margin-bottom: 20px;">
+                        वात्सल्य भोज में आपका नामांकन सफलतापूर्वक दर्ज हो गया है।
+                    </p>
 
-                    <div class="token-display">
-                        <p class="token-label">Your Token Number</p>
-                        <h1 id="tokenDisplay" class="token-number">001</h1>
-                        <p class="token-hint">Tell this number at the venue</p>
+                    <div class="registration-summary-box">
+                        <div class="summary-field">
+                            <span class="summary-label">Name</span>
+                            <span id="summaryName" class="summary-value">-</span>
+                        </div>
+                        <div class="summary-field">
+                            <span class="summary-label">Phone</span>
+                            <span id="summaryPhone" class="summary-value">-</span>
+                        </div>
+                        <div class="summary-field">
+                            <span class="summary-label">Total Headcount</span>
+                            <span id="summaryHeadcount" class="summary-value">-</span>
+                        </div>
                     </div>
 
                     <div class="event-details">
@@ -172,12 +142,12 @@
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            Save Token to Phone
+                            Save Confirmation Card
                         </button>
                     </div>
 
                     <p id="emailSent" class="email-notice hidden">
-                        Token also sent to your email
+                        Confirmation email also sent!
                     </p>
 
                     <button id="newRegistrationBtn" class="link-btn">
