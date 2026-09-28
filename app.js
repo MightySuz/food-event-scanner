@@ -4,10 +4,10 @@
  */
 
 // ============================================
-// CONFIGURATION - API URL is hardcoded
+// CONFIGURATION - Loaded from config.json or fallback
 // ============================================
 
-const API_URL = 'add the url here';
+let API_URL = '';
 
 
 const state = {
@@ -67,7 +67,26 @@ const elements = {
 // INITIALIZATION
 // ============================================
 
-function init() {
+async function init() {
+    // 1. Try loading config from config.json
+    try {
+        const response = await fetch('config.json');
+        if (response.ok) {
+            const config = await response.json();
+            const urlVal = (config.apiUrl || '').trim();
+            if (urlVal && urlVal !== 'add the url here') {
+                API_URL = urlVal;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not read config.json:', e);
+    }
+
+    // 2. If not specified or running on local server, fallback to /api
+    if (!API_URL && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+        API_URL = '/api';
+    }
+
     // Bind events
     bindEvents();
 }
@@ -176,7 +195,7 @@ async function handleRegistration(e) {
         }
     } catch (error) {
         console.error('Registration error:', error);
-        showError('Connection Error', 'Unable to connect to server. Please check your internet connection.');
+        showError('Connection Error', error.message || 'Unable to connect to server. Please check your internet connection.');
     } finally {
         setButtonLoading(elements.submitBtn, false);
     }
@@ -218,7 +237,7 @@ async function handleLookup(e) {
         }
     } catch (error) {
         console.error('Lookup error:', error);
-        showError('Connection Error', 'Unable to connect to server. Please check your internet connection.');
+        showError('Connection Error', error.message || 'Unable to connect to server. Please check your internet connection.');
     } finally {
         setButtonLoading(elements.lookupBtn, false);
     }
@@ -373,21 +392,36 @@ function saveAsImage() {
 // ============================================
 
 async function callApi(action, params = {}) {
-    const url = new URL(API_URL);
+    if (!API_URL || API_URL === 'add the url here') {
+        throw new Error('API URL is not configured. Please check config.json.');
+    }
+
+    const url = new URL(API_URL, window.location.origin);
     url.searchParams.append('action', action);
 
     Object.keys(params).forEach(key => {
-        if (params[key]) {
+        if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
             url.searchParams.append(key, params[key]);
         }
     });
 
-    const response = await fetch(url.toString(), {
-        method: 'GET',
-        mode: 'cors'
-    });
+    let response;
+    try {
+        response = await fetch(url.toString(), {
+            method: 'GET',
+            mode: 'cors'
+        });
+    } catch (networkError) {
+        if (API_URL.includes('script.google.com')) {
+            throw new Error('Google Apps Script permission error. Ensure "Who has access" is set to "Anyone" in Google Apps Script deployment.');
+        }
+        throw new Error('Unable to connect to server. Check your network or server status.');
+    }
 
     if (!response.ok) {
+        if (response.status === 403 && API_URL.includes('script.google.com')) {
+            throw new Error('Google Apps Script returned 403. Set "Who has access" to "Anyone" in deployment.');
+        }
         throw new Error(`HTTP error: ${response.status}`);
     }
 
