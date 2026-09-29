@@ -13,7 +13,7 @@
 // ============================================
 const CONFIG = {
   SHEET_NAME: 'Registrations',
-  EVENT_NAME: 'श्री महावीर जन्म कल्याणक महोत्सव - वात्सल्य भोज',
+  EVENT_NAME: 'नालागंडला क्षमावाणी कार्यक्रम - वात्सल्य भोज',
   EVENT_DATE: 'Sunday, October 04, 2026',
   EVENT_TIME: '12:00 PM',
   EVENT_VENUE: 'Aparna Sarovar Zenith ClubHouse, Behind Aparna Neo Mall, Nallagandla, Hyderabad',
@@ -37,7 +37,7 @@ const COLS = {
 // ============================================
 
 /**
- * Run this once to set up the sheet with headers
+ * Run this once to set up the sheet with headers and authorize permissions
  */
 function setupSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -74,7 +74,32 @@ function setupSheet() {
   sheet.setColumnWidth(7, 90);  // Attended
   sheet.setColumnWidth(8, 160); // Check-in Time
 
+  // Trigger authorization for MailApp
+  try {
+    const quota = MailApp.getRemainingDailyQuota();
+    Logger.log('Email daily quota remaining: ' + quota);
+  } catch (e) {
+    Logger.log('MailApp check: ' + e);
+  }
+
   Logger.log('Sheet setup complete!');
+}
+
+/**
+ * Run this function in Apps Script to verify/grant Email permissions
+ */
+function testEmailAndPermissions() {
+  const quota = MailApp.getRemainingDailyQuota();
+  Logger.log('Mail permission active! Remaining daily emails: ' + quota);
+  
+  if (CONFIG.ORGANIZER_EMAIL) {
+    MailApp.sendEmail(
+      CONFIG.ORGANIZER_EMAIL,
+      'Test Email - Food Event Scanner',
+      'Email service is connected and working!'
+    );
+    Logger.log('Sent test email to: ' + CONFIG.ORGANIZER_EMAIL);
+  }
 }
 
 /**
@@ -185,15 +210,24 @@ function registerUser(params) {
   rowData.push('');    // Check-in Time
 
   sheet.appendRow(rowData);
+  SpreadsheetApp.flush();
 
-  // Send confirmation email if email was provided
+  // Send confirmation email if email was provided (safely isolated)
   if (email) {
-    sendConfirmationEmail(email, name, familyCount, kidsCount);
+    try {
+      sendConfirmationEmail(email, name, familyCount, kidsCount);
+    } catch (e) {
+      Logger.log('Attendee email notice: ' + e);
+    }
   }
 
-  // Notify organizer (optional)
+  // Notify organizer (safely isolated)
   if (CONFIG.ORGANIZER_EMAIL) {
-    notifyOrganizer(name, phone, familyCount, kidsCount);
+    try {
+      notifyOrganizer(name, phone, familyCount, kidsCount);
+    } catch (e) {
+      Logger.log('Organizer email notice: ' + e);
+    }
   }
 
   return {
