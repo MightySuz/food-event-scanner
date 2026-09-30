@@ -12,7 +12,7 @@ let API_URL = '';
 const DEFAULT_EVENT = {
     eventName: 'नालागंडला क्षमावाणी कार्यक्रम - वात्सल्य भोज',
     eventDate: 'Sunday, October 04, 2026',
-    eventTime: '12:00 PM',
+    eventTime: '09:30 AM',
     eventVenue: 'Aparna Sarovar Zenith ClubHouse, Behind Aparna Neo Mall, Nallagandla, Hyderabad'
 };
 
