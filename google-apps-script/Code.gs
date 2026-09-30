@@ -15,9 +15,9 @@ const CONFIG = {
   SHEET_NAME: 'Registrations',
   EVENT_NAME: 'नालागंडला क्षमावाणी कार्यक्रम - वात्सल्य भोज',
   EVENT_DATE: 'Sunday, October 04, 2026',
-  EVENT_TIME: '12:00 PM',
+  EVENT_TIME: '09:30 AM',
   EVENT_VENUE: 'Aparna Sarovar Zenith ClubHouse, Behind Aparna Neo Mall, Nallagandla, Hyderabad',
-  ORGANIZER_EMAIL: '', // Optional: Add your email to get notifications
+  ORGANIZER_EMAIL: 'djj.nallagandla@gmail.com', // Optional: Add your email to get notifications
 };
 
 // Column mapping (1-indexed)
