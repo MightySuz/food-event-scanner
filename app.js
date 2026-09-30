@@ -252,10 +252,10 @@ function saveAsImage() {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 18px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('श्री महावीर जन्म कल्याणक महोत्सव', width / 2, 38);
+    ctx.fillText('श्री दिगम्बर जैन जिनालय नल्लगंडला', width / 2, 38);
 
     ctx.font = '15px Arial, sans-serif';
-    ctx.fillText('वात्सल्य भोज - नामांकन पुष्टि', width / 2, 65);
+    ctx.fillText('वात्सल्य भोज registration', width / 2, 65);
 
     // Confirmation Badge
     ctx.fillStyle = '#e8f5e9';
